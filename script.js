@@ -1,5 +1,5 @@
 // by: technodoomedone
-
+ 
 /* ===============================================================================================
      Stores all available Torment cards so they might be used.
  =============================================================================================== */
@@ -785,7 +785,7 @@ function generateCards() {
             // other hasn't been chosen yet.
             if ((card.text == "Further increase card difficulty") &&
                 (AppState.pickedMetaCards.indexOf("Slightly increase card difficulty") == -1)) {
-                card = metaCards[metaCards.length - 3];
+                card = metaCards[metaCards.length - 6];
             }
 
             // Don't offer any card that is already on offer right now, or has been picked before...
@@ -1022,12 +1022,12 @@ function takeCard(slotIndex) {
                 document.getElementById('picktext').textContent = text;
                 rb.innerHTML = "Continue";
             }
+        }
 
-            // If the window is too slim, remove the card slots from view entirely so that buttons
-            // jump higher and can be used without scrolling. More comfortable for mobile devices.
-            if (document.getElementById('card0').width < 208) {
-                document.getElementById('cardslots').style.display = "none";
-            }
+        // If the window is too slim, remove the card slots from view entirely so that buttons
+        // jump higher and can be used without scrolling. More comfortable for mobile devices.
+        if (document.getElementById('card0').width < 208) {
+            document.getElementById('cardslots').style.display = "none";
         }
     }
     else {
@@ -1152,13 +1152,10 @@ function nextRound() {
      // Generate new cards.
      generateCards();
 
-     // If the window is too slim, reset the card slots again. Thought for mobile devices.
-     if (document.getElementById('card0').width < 208) {
-         document.getElementById('cardslots').style.display = "flex";
-     }
+     // Reset the card slots again, in case they were removed for a better experience in mobile.
+     document.getElementById('cardslots').style.display = "flex";
 
      // Deactivate challenge mode after card generation.
      AppState.difficulty += (AppState.challengeMode && (AppState.round == 2));
      AppState.challengeMode = false;
 }
-
