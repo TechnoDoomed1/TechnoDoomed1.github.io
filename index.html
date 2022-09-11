@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <title>Torment cards challenge</title>
+    <link rel="stylesheet" type="text/css" href="styles.css"/>
+  </head>
+  <body>
+      <div id="topcontainer">
+      <div id="roundtext">Round 1</div>
+      <div id="maptext">(no map)</div>
+      <section id="welcometext-section">
+        <p id="welcometext"><b><i>Torment cards</i></b> is a Phasmophobia challenge run in which the player must beat 6 maps, with increasing difficulty.<br><i>(A map is considered as beaten if any player survives and the ghost is guessed.‍)</i><br><br>Every round, the player must choose cards that will make the run permanently harder.<br>Ready to start?</p>
+      </section>
+      <div id="picktext">Pick 2 of these cards:</div>
+      <div id="cardslots">
+        <img src="./images/BasicUnknown.gif" alt="" class="card" id="card0" onclick="">
+        <img src="./images/BasicUnknown.gif" alt="" class="card" id="card1" onclick="">
+        <img src="./images/BasicUnknown.gif" alt="" class="card" id="card2" onclick="">
+        <img src="./images/BasicUnknown.gif" alt="" class="card" id="card3" onclick="">
+      </div>
+      <div id="middlecontainer">
+        <button id="newrun-button" onclick="startNewRun();">Start new run</button>
+        <button class="nextround-button-disabled" id="nextround-button" onclick="">Next round</button>
+      </div>
+      <div id="listcolumns">
+        <div class="column">
+          <div class="listtext">Modifiers:</div>
+          <div class="sidecontainer">
+            <div class="normaltext" id="modifiers"></div>
+          </div>
+        </div>
+        <div class="column">
+          <div class="listtext">Challenges:</div>
+          <div class="sidecontainer">
+            <div class="normaltext" id="challenges"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript" src="script.js"></script>
+  </body>
+</html>
