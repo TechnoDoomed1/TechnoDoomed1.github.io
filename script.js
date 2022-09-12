@@ -21,12 +21,12 @@ let CardType = {
  ----------------------------------------------------------------------------------------------- */
 let CardRarity = {
     SPAM:             [25, 25, 25, 25, 25], // The card will be spammed as an option whenever possible.
-    PERMANENT_COMMON: [11,  1,  1,  1,  1], // Common. Always a choice regardless of difficulty.
+    PERMANENT_COMMON: [11,  1,  1,  1,  0], // Common. Always a choice unless at max difficulty.
     COMMON:           [11,  1,  0,  0,  0], // Common. Will not be offered anymore as difficulty increases.
     UNCOMMON:         [ 6,  6,  6,  6,  1], // Uncommon.
-    LOCKED_UNCOMMON:  [ 0,  6,  6,  6,  1], // Uncommon. Only ever gets offered after difficulty increases.
+    LOCKED_UNCOMMON:  [ 0,  0,  6,  6,  1], // Uncommon. Only ever gets offered as difficulty increases.
     RARE:             [ 3,  3,  3,  3,  3], // Rare.
-    LOCKED_RARE:      [ 0,  3,  3,  3,  3], // Rare. Only ever gets offered after difficulty increases.
+    LOCKED_RARE:      [ 0,  0,  3,  3,  3], // Rare. Only ever gets offered as difficulty increases.
     NEVER_OFFER:      [ 0,  0,  0,  0,  0]  // Will never be offered normally.
 };
 
@@ -666,22 +666,30 @@ function hardRun() {
     // Hide the welcome text section.
     document.getElementById('welcometext-section').style.display = "none";
 
-    // Set the round text to explain what's going on.
+    // Set the round and map text to explain what's going on.
     document.getElementById('roundtext').textContent = "How hard?";
     document.getElementById('roundtext').style.color = "#8b0000";
+    document.getElementById('maptext').textContent = "Choose your own difficulty";
+    document.getElementById('maptext').style.color = "#af0000";
 
     // This extra round of pain, all cards are going to be visible - not a mystery.
     AppState.finishMode = true;
 
     // Set the cards and show them.
-    AppState.offeredCards = [metaCards[3], metaCards[10], metaCards[11], metaCards[12]];
+    AppState.offeredCards = [metaCards[12], metaCards[11], metaCards[10], metaCards[3]];
     for (var slotIndex = 0; slotIndex < 4; slotIndex++) {
         unhideCard(slotIndex);
     }
 
     // Set the pick text, and amount of cards to be picked.
-    document.getElementById('picktext').textContent = "Pick 2 of these cards:";
-    AppState.remainingPicks = 2;
+    document.getElementById('picktext').textContent = "Pick any amount of these cards:";
+    AppState.remainingPicks = 4;
+
+    // Allow the user to continue at any given moment.
+    var rb = document.getElementById('nextround-button');
+    rb.className = "nextround-button-enabled";
+    rb.onclick = function onclick(event) { nextRound(); };
+    rb.innerHTML = "Continue";
 }
 
 /* -----------------------------------------------------------------------------------------------
@@ -708,13 +716,13 @@ function generateCards() {
         cardPool = challengeCards;
         metaSlots = [];
     }
-    // Round 4 has an extra meta card (normal amount is 1, randomly 0-1 in rounds 1 & 5).
+    // Rounds have different amount of meta cards offered: 0-1, 1, 0, 1-2, 1, 0.
     // In chaos mode, challenge or altered cards may also be offered less frequently.
     else {
         cardPool = AppState.chaosMode? randomCards : normalCards;
         metaLimit = AppState.noMetaMode? 0 : 1 + (AppState.round == 4);
 
-        if ((AppState.round % 4 == 1) || AppState.chaosMode) {
+        if ((AppState.round % 3 == 1) || AppState.chaosMode) {
             metaLimit = AppState.noMetaMode? 0 : metaLimit - Math.floor(Math.random() * 2);
         }
 
@@ -940,6 +948,7 @@ function takeCard(slotIndex) {
             AppState.finishMode = true;
 
             document.getElementById('maptext').textContent = biggerMaps[1];
+            document.getElementById('picktext').textContent = "Pick all remaining cards:";
             
             AppState.hiddenSlots = getHiddenSlots();
             for (var otherSlotIndex = 0; otherSlotIndex < 4; otherSlotIndex++) {
@@ -1003,24 +1012,24 @@ function takeCard(slotIndex) {
         }
 
         // Otherwise: enable the 'next round' button, hide all cards, update the pick text.
+        // In finish mode, don't show this text.
         else {
-            var rb = document.getElementById('nextround-button');
-            rb.className = "nextround-button-enabled";
-            rb.onclick = function onclick(event) { nextRound(); };
-            rb.innerHTML = "Next round";
+            if (!AppState.finishMode) {
+                var rb = document.getElementById('nextround-button');
+                rb.className = "nextround-button-enabled";
+                rb.onclick = function onclick(event) { nextRound(); };
+                rb.innerHTML = "Next round";
 
-            for (var otherSlotIndex = 0; otherSlotIndex < 4; otherSlotIndex++) {
-                hideCard(otherSlotIndex);
-            }
+                for (var otherSlotIndex = 0; otherSlotIndex < 4; otherSlotIndex++) {
+                    hideCard(otherSlotIndex);
+                }
 
-            if (AppState.round > 0) {
                 let text = "If you beat the map, go to the next round.";
                 document.getElementById('picktext').textContent = text;
             }
             else {
-                let text = "Your choices have been made...";
+                let text = "Feeling masochistic, eh? Go ahead...";
                 document.getElementById('picktext').textContent = text;
-                rb.innerHTML = "Continue";
             }
         }
 
@@ -1030,7 +1039,7 @@ function takeCard(slotIndex) {
             document.getElementById('cardslots').style.display = "none";
         }
     }
-    else {
+    else if (!AppState.finishMode) {
         let newPickText = "Pick " + AppState.remainingPicks + " of these cards:";
         document.getElementById('picktext').textContent = newPickText;
     }
@@ -1101,6 +1110,7 @@ function nextRound() {
      AppState.round += 1
      document.getElementById('roundtext').textContent = "Round " + AppState.round;
      document.getElementById('roundtext').style.color = "black";
+     document.getElementById('maptext').style.color = "#0000da";
 
      let challengeRoundsVisited = Math.floor(AppState.round / 3);
 
