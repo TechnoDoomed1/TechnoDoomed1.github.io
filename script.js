@@ -21,7 +21,7 @@ let CardType = {
  ----------------------------------------------------------------------------------------------- */
 let CardRarity = {
     SPAM:             [25, 25, 25, 25, 25], // The card will be spammed as an option whenever possible.
-    PERMANENT_COMMON: [11,  1,  1,  1,  0], // Common. Always a choice unless at max difficulty.
+    PERMANENT_COMMON: [11,  1,  1,  1,  1], // Common. Always a choice regardless of difficulty.
     COMMON:           [11,  1,  0,  0,  0], // Common. Will not be offered anymore as difficulty increases.
     UNCOMMON:         [ 6,  6,  6,  6,  1], // Uncommon.
     LOCKED_UNCOMMON:  [ 0,  0,  6,  6,  1], // Uncommon. Only ever gets offered as difficulty increases.
@@ -605,8 +605,9 @@ function startNewRun() {
     document.getElementById('maptext').innerHTML = "&nbsp;";
     document.getElementById('picktext').textContent = "Choose your challenge run:";
 
-    // Show the welcome text section.
+    // Show the welcome text section, and link to explanation page.
     document.getElementById('welcometext-section').style.display = "block";
+    document.getElementById('go-to-explanation').style.display = "inline";   
 
     // Show the run cards on screen, and update what happens when you click on them.
     document.getElementById('card0').src = "./images/Run_Normal.gif";
@@ -649,8 +650,9 @@ function normalRun() {
     document.getElementById('nextround-button').style.display = "inline";
     document.getElementById('listcolumns').style.display = "flex";
 
-    // Hide the welcome text section.
+    // Hide the welcome text section, and link to explanation page.
     document.getElementById('welcometext-section').style.display = "none";
+    document.getElementById('go-to-explanation').style.display = "none";
 
     // Go to next round, which is the first round.
     nextRound();
@@ -663,8 +665,9 @@ function hardRun() {
     document.getElementById('newrun-button').style.display = "inline";
     document.getElementById('nextround-button').style.display = "inline";
 
-    // Hide the welcome text section.
+    // Hide the welcome text section, and link to explanation page.
     document.getElementById('welcometext-section').style.display = "none";
+    document.getElementById('go-to-explanation').style.display = "none";
 
     // Set the round and map text to explain what's going on.
     document.getElementById('roundtext').textContent = "How hard?";

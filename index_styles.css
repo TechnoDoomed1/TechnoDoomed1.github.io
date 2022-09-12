@@ -1,6 +1,7 @@
 body {
   background-image: url('./images/Background.gif'); 
   background-repeat: repeat-x repeat-y;
+  text-align: center;
 }
 
 #welcometext-section {
@@ -145,4 +146,11 @@ body {
   font-size: 14px;
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 400;
+}
+
+.technicaltext {
+  color: #003757;
+  font-size: calc(14px + 0.1vw);
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
 }
