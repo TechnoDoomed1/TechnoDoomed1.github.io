@@ -394,10 +394,13 @@ class AppHandler {
         }
         
         // Increase the round counter by 1.
-        // Difficulty is also increased at rounds 3 & 5.
+        // Difficulty is also increased at rounds 3 & 5, but reset to 0 during round 6.
         AppHandler.state.round++;
         if ((AppHandler.state.round == 3) || (AppHandler.state.round == 5)) {
             AppHandler.state.difficulty++;
+        }
+        else if ((AppHandler.state.round == 6)) {
+            AppHandler.state.difficulty = 0;
         }
         
         // Set the correct amount of cards to pick this new round. By default, it's 2.
@@ -675,13 +678,13 @@ class AppHandler {
             var textRemoval = function filterFunction(element) { return element != card.text[card.timesPicked - 2] };
             
             if (card.type == "Golden") {
-                AppHandler.state.pickedGoldCards.filter(textRemoval);
+                AppHandler.state.pickedGoldCards = AppHandler.state.pickedGoldCards.filter(textRemoval);
             }
             if (card.type == "Challenge") {
-                AppHandler.state.pickedChallenges.filter(textRemoval);
+                AppHandler.state.pickedChallenges = AppHandler.state.pickedChallenges.filter(textRemoval);
             }
             else {
-                AppHandler.state.pickedModifiers.filter(textRemoval);
+                AppHandler.state.pickedModifiers = AppHandler.state.pickedModifiers.filter(textRemoval);
             }
         }
         if (card.baseCard) {
@@ -690,13 +693,13 @@ class AppHandler {
                 textRemoval = function filterFunction(element) { return (element != card.baseCard.text[index]) };
                 
                 if (card.type == "Golden") {
-                    AppHandler.state.pickedGoldCards.filter(textRemoval);
+                    AppHandler.state.pickedGoldCards = AppHandler.state.pickedGoldCards.filter(textRemoval);
                 }
                 if (card.type == "Challenge") {
-                    AppHandler.state.pickedChallenges.filter(textRemoval);
+                    AppHandler.state.pickedChallenges = AppHandler.state.pickedChallenges.filter(textRemoval);
                 }
                 else {
-                    AppHandler.state.pickedModifiers.filter(textRemoval);
+                    AppHandler.state.pickedModifiers = AppHandler.state.pickedModifiers.filter(textRemoval);
                 }
             }
         }
@@ -707,12 +710,20 @@ class AppHandler {
         //-------------
         // Modifiers
         //-------------
-        let modifiers = AppHandler.state.pickedModifiers.sort();
+        let modifiers = AppHandler.state.pickedModifiers.sort().reverse();
         var modifierText = "";
+        var sectionIndex, oldSectionIndex = null;
 
         for (var modifierIndex = 0; modifierIndex < modifiers.length; modifierIndex++) {
             let modifier = modifiers[modifierIndex];
+            sectionIndex = modifier.indexOf("[Player]") >= 0? 0 : (modifier.indexOf("[Ghost]") >= 0? 1 : 2);
+
+            if ((oldSectionIndex !== null) && (oldSectionIndex != sectionIndex)) {
+                modifierText += "--------------------------------------------------" + "<br>";
+            }
             modifierText += modifier + "<br>";
+            
+            oldSectionIndex = sectionIndex;
         }
         WebHandler.changeText('modifiers', modifierText);
         
@@ -1687,7 +1698,7 @@ let goldenCards = new CardCollection([
        
     {"type":       "Golden",
      "difficulty": "Very easy",
-     "rarity":     +1,
+     "rarity":     +2,
      "image":      "./images/golden8.gif",
      "text":      ["You can fail any 1 round. Longer run"],
      "maxPicks":   1,
@@ -1697,6 +1708,7 @@ let goldenCards = new CardCollection([
      "effect":    
          function onPick() { 
              AppHandler.state.maxRounds += 1;
+             AppHandler.state.pickedChallenges.splice(0, 0, "-- REMINDER: You may fail any 1 round --<br>");
          } 
      }
 ]);

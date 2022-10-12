@@ -128,7 +128,7 @@ body {
 
 .sidecontainer {
   position: relative;
-  height: 180px;
+  height: 240px;
   width: min(560px, calc(360px + 5.0vw));
   border: 1px solid #000000;
   background-color: #ffffff;
