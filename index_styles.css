@@ -1,12 +1,12 @@
 body {
-  background-image: url('./images/Background.gif'); 
+  background-image: url('./images/background.gif'); 
   background-repeat: repeat-x repeat-y;
   text-align: center;
 }
 
 #welcometext-section {
   position: relative;
-  padding: 20px 30px 30px 20px;
+  padding: 20px 30px 15px 20px;
   margin: 5px 5px;
   background-color: #00002a;
   text-align: center;
@@ -63,7 +63,7 @@ body {
   padding-top: 20px;
 }
 
-#newrun-button {
+#left-button {
   border: 1px solid red;
   background-color: #ff6666;
   color: #ffffff;
