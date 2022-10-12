@@ -24,6 +24,13 @@ body {
   max-width: 1024px;
 }
 
+#returntext {
+  color: #0097a7;
+  font-size: calc(14px + 0.1vw);
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+}
+
 .headingtext {
   color: #006dad;
   font-size: calc(28px + 0.2vw);

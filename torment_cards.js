@@ -212,9 +212,10 @@ class AppHandler {
         scheduleMystery:  false,
         mysteryMode:      false,
         chaosMode:        false,
-        showAllMode:      false,
+        keepUnpickedMode: false,
+        noGoldMode:       false,
         alteredMode:      false,
-        noGoldMode:       false
+        showAllMode:      false
     }
     
     // --------------------------------------------------------------------------------------------
@@ -247,9 +248,10 @@ class AppHandler {
             scheduleMystery:  false,
             mysteryMode:      false,
             chaosMode:        false,
-            showAllMode:      false,
+            keepUnpickedMode: false,
+            noGoldMode:       false,
             alteredMode:      false,
-            noGoldMode:       false
+            showAllMode:      false
         }
     }
     
@@ -494,6 +496,12 @@ class AppHandler {
         var card, success;
         
         for (var slotIndex = 0; slotIndex < slotAmount; slotIndex++) {
+            // In "keepUnpickedMode", cards that weren't chosen last round will still be there.
+            if (AppHandler.state.keepUnpickedMode && (AppHandler.state.hiddenSlots.indexOf(slotIndex) == -1)) {
+                WebHandler.showCard(slotIndex, AppHandler.state);
+                continue;
+            }
+            
             while (!success) {
                 success = true;
                 
@@ -519,9 +527,9 @@ class AppHandler {
                         card = card.definitiveVersion;
                     }
                     // Stackable cards (which are special silver cards) are changed to their definitive version
-                    // in "alteredMode" with 100% probability, and in "chaosMode" with 50% probability.
-                    else if ((card.type == "Stackable") &&
-                             (AppHandler.state.alteredMode || (AppHandler.state.chaosMode && (Math.random() < 0.5)))) {
+                    // in "alteredMode" or "chaosMode" with 25% to 50% probability (rises as difficulty does)
+                    else if ((card.type == "Stackable") && (Math.random() < 0.25 + AppHandler.state.difficulty * 5) &&
+                             (AppHandler.state.alteredMode || AppHandler.state.chaosMode)) {
                         card = card.definitiveVersion;
                     }
                 }
@@ -560,14 +568,15 @@ class AppHandler {
                 }
                 
                 // Don't offer cards that are incompatible with others already picked, or other cards on offer.
-                for (let incompatText in card.incompatibleCards) {
+                for (var incompatIndex = 0; incompatIndex < card.incompatibleCards.length; incompatIndex++) {
+                    let incompatText = card.incompatibleCards[incompatIndex];
+					
                     if ((AppHandler.state.pickedModifiers.indexOf(incompatText) >= 0) ||
                         (AppHandler.state.pickedChallenges.indexOf(incompatText) >= 0) ||
                         (AppHandler.state.pickedGoldCards.indexOf(incompatText) >= 0)) {
                         success = false;
                         break;
                     }
-                    
                 }
                 for (var slotIndex2 = 0; slotIndex2 < slotIndex; slotIndex2++) {
                     let otherCard = AppHandler.state.offeredCards[slotIndex2];
@@ -596,6 +605,9 @@ class AppHandler {
             AppHandler.state.offeredCards[randomSpecialIndex] = specialCard;
             WebHandler.showCard(randomSpecialIndex, AppHandler.state);
         }
+        
+        // No longer need to know which slots were hidden before.
+        AppHandler.state.hiddenSlots = [];
     }
     
     // --------------------------------------------------------------------------------------------
@@ -747,6 +759,14 @@ class AppHandler {
 
         // If there are no more cards to pick...
         if (AppHandler.state.remainingPicks == 0) {
+            // Get all previously hidden cards.
+            let slotAmount = AppHandler.state.totalCardSlots;
+             
+            for (var slotIndex2 = 0; slotIndex2 < slotAmount; slotIndex2++) {
+                if (WebHandler.isCardHidden(slotIndex2)) {
+                    AppHandler.state.hiddenSlots.push(slotIndex2);
+                }
+            }
 
             // Check if the run has ended, saying so clearly and hiding all cards.
             if (AppHandler.state.round == AppHandler.state.maxRounds) {
@@ -864,9 +884,9 @@ class TormentCard {
                       
     static weights = [[0, 0, 0, 0, 0, 0], // Difficulty: Don't offer
                       [3, 1, 0, 0, 0, 0], // Difficulty: Very easy
-                      [4, 3, 2, 1, 0, 0], // Difficulty: Easy
+                      [4, 3, 3, 1, 0, 0], // Difficulty: Easy
                       [2, 3, 3, 3, 1, 0], // Difficulty: Normal
-                      [1, 2, 4, 3, 5, 5], // Difficulty: Hard
+                      [1, 2, 3, 3, 5, 5], // Difficulty: Hard
                       [0, 1, 1, 2, 3, 3], // Difficulty: Very hard
                       [0, 0, 0, 1, 1, 2]] // Difficulty: Maybe impossible
                       
@@ -924,7 +944,7 @@ class TormentCard {
             return 0;
         }
         // Otherwise, return the appropiate weight based on the card's difficulty rating and
-        // current difficulty, taking into account is rarity.
+        // current difficulty, taking into account its rarity.
         else {
             let baseWeight = TormentCard.weights[this.rating][difficulty];
             
@@ -1197,9 +1217,9 @@ let silverCards = new CardCollection([
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
-                    "incompatibleCards": []},
+                    "incompatibleCards": ["[Player] Sprinting: Off"]},
      "forbiddenRounds":   [],
-     "incompatibleCards": ["[Player] Player speed: 50%"]},
+     "incompatibleCards": ["[Player] Sprinting: Off", "[Player] Player speed: 50%"]},
        
     {"type":       "Stackable",
      "difficulty": "Hard",
@@ -1709,6 +1729,21 @@ let goldenCards = new CardCollection([
          function onPick() { 
              AppHandler.state.maxRounds += 1;
              AppHandler.state.pickedChallenges.splice(0, 0, "-- REMINDER: You may fail any 1 round --<br>");
+         } 
+     },
+     
+    {"type":       "Golden",
+     "difficulty": "Normal",
+     "rarity":     +0,
+     "image":      "./images/golden9.gif",
+     "text":      ["Unchosen cards will remain on offer"],
+     "maxPicks":   1,
+     "definitive": null,
+     "forbiddenRounds":   [4, 5],
+     "incompatibleCards": [],
+     "effect":    
+         function onPick() { 
+             AppHandler.state.keepUnpickedMode = true;
          } 
      }
 ]);
