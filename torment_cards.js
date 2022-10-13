@@ -1094,7 +1094,7 @@ let silverCards = new CardCollection([
      "difficulty": "Very easy",
      "rarity":     +5,
      "image":      "./images/basic7.gif",
-     "text":      ["[Contract] Weather: Snowing"],
+     "text":      ["[Contract] Weather: Snow"],
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
