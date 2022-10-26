@@ -382,8 +382,6 @@ class AppHandler {
     //  Advances to the next round of the run.
     // --------------------------------------------------------------------------------------------
     static nextRound() {
-        // Disable "showAllMode" since it's intended to last only through 1 round. 
-        
         // Enable "mysteryMode" if it's scheduled, or disable it if it's already active.
         AppHandler.state.showAllMode = false;
         
@@ -396,9 +394,9 @@ class AppHandler {
         }
         
         // Increase the round counter by 1.
-        // Difficulty is also increased at rounds 3 & 5, but reset to 0 during round 6.
+        // Difficulty is also increased at rounds 2 & 4, but reset to 0 during round 6.
         AppHandler.state.round++;
-        if ((AppHandler.state.round == 3) || (AppHandler.state.round == 5)) {
+        if ((AppHandler.state.round == 2) || (AppHandler.state.round == 4)) {
             AppHandler.state.difficulty++;
         }
         else if ((AppHandler.state.round == 6)) {
@@ -493,7 +491,7 @@ class AppHandler {
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // Keep coming up with possibilities for each slot, until a card can be offered.
         let slotAmount = AppHandler.state.totalCardSlots;
-        var card, success;
+        var card, success, tries;
         
         for (var slotIndex = 0; slotIndex < slotAmount; slotIndex++) {
             // In "keepUnpickedMode", cards that weren't chosen last round will still be there.
@@ -502,8 +500,17 @@ class AppHandler {
                 continue;
             }
             
+            tries = 0;
+            
             while (!success) {
                 success = true;
+                tries++;
+                
+                // If 500 or more cards were tried, but none could be found, we don't have enough silver cards.
+                // Therefore, just make them all be challenges instead.
+                if (tries >= 500) {
+                    challengeSlots = [0, 1, 2, 3];
+                }
                 
                 // Cards offered in golden slots must be golden cards.
                 // Cards offered in challenge slots must be challenge cards.
@@ -527,8 +534,9 @@ class AppHandler {
                         card = card.definitiveVersion;
                     }
                     // Stackable cards (which are special silver cards) are changed to their definitive version
-                    // in "alteredMode" or "chaosMode" with 25% to 50% probability (rises as difficulty does)
-                    else if ((card.type == "Stackable") && (Math.random() < 0.25 + AppHandler.state.difficulty * 5) &&
+                    // in "alteredMode" or "chaosMode" with 25% to 100% probability (rises as difficulty does).
+                    else if (((card.type == "Stackable") || (card.text == "Can't use strong flashlights")) && 
+                             (Math.random() < 0.25 + AppHandler.state.difficulty * 0.375) &&
                              (AppHandler.state.alteredMode || AppHandler.state.chaosMode)) {
                         card = card.definitiveVersion;
                     }
@@ -570,7 +578,7 @@ class AppHandler {
                 // Don't offer cards that are incompatible with others already picked, or other cards on offer.
                 for (var incompatIndex = 0; incompatIndex < card.incompatibleCards.length; incompatIndex++) {
                     let incompatText = card.incompatibleCards[incompatIndex];
-					
+                    
                     if ((AppHandler.state.pickedModifiers.indexOf(incompatText) >= 0) ||
                         (AppHandler.state.pickedChallenges.indexOf(incompatText) >= 0) ||
                         (AppHandler.state.pickedGoldCards.indexOf(incompatText) >= 0)) {
@@ -597,13 +605,23 @@ class AppHandler {
             success = false;
         }
         
-        // There's a 20% probability in "noGoldMode", to start round 1 with a special challenge available.
-        if (AppHandler.state.noGoldMode && (Math.random() < 0.2) && (AppHandler.state.round == 1)) {
-            var specialCard = challengeCards[challengeCards.length - 1];
-            var randomSpecialIndex = Math.floor(Math.random() * 4);
+        // In "noGoldMode", round 1 will almost always offer a challenge (80% probability).
+        // There's a 25% probability of it being a special challenge.
+        if (AppHandler.state.noGoldMode && (Math.random() < 0.8) && (AppHandler.state.round == 1)) {
+            var randomChallengeIndex = Math.floor(Math.random() * 4);
+            var challengeCard;
             
-            AppHandler.state.offeredCards[randomSpecialIndex] = specialCard;
-            WebHandler.showCard(randomSpecialIndex, AppHandler.state);
+            if (Math.random() < 0.33) {
+                challengeCard = challengeCards[challengeCards.length - 1];
+            }
+            else {
+                do {
+                    challengeCard = challengeCards[Math.floor(Math.random() * challengeCards.length)];
+                } while(challengeCard.text == "No sound");
+            }
+            
+            AppHandler.state.offeredCards[randomChallengeIndex] = challengeCard;
+            WebHandler.showCard(randomChallengeIndex, AppHandler.state);
         }
         
         // No longer need to know which slots were hidden before.
@@ -781,6 +799,7 @@ class AppHandler {
             else {
                 if (AppHandler.state.round == 0) {
                     WebHandler.changeText('picktext', "Feeling masochistic, eh? Go ahead...");
+                    AppHandler.state.difficulty = 4;
                 }
                 else {
                     WebHandler.changeText('right-button', "Next round");
@@ -882,13 +901,13 @@ class TormentCard {
                       "Very hard":        5, 
                       "Maybe impossible": 6};
                       
-    static weights = [[0, 0, 0, 0, 0, 0], // Difficulty: Don't offer
-                      [3, 1, 0, 0, 0, 0], // Difficulty: Very easy
-                      [4, 3, 3, 1, 0, 0], // Difficulty: Easy
-                      [2, 3, 3, 3, 1, 0], // Difficulty: Normal
-                      [1, 2, 3, 3, 5, 5], // Difficulty: Hard
-                      [0, 1, 1, 2, 3, 3], // Difficulty: Very hard
-                      [0, 0, 0, 1, 1, 2]] // Difficulty: Maybe impossible
+    static weights = [[0, 0, 0, 0, 0, 0, 0], // Difficulty: Don't offer
+                      [2, 1, 0, 0, 0, 0, 0], // Difficulty: Very easy
+                      [3, 2, 2, 1, 0, 0, 0], // Difficulty: Easy
+                      [3, 4, 3, 2, 1, 0, 0], // Difficulty: Normal
+                      [2, 2, 3, 4, 5, 5, 4], // Difficulty: Hard
+                      [0, 1, 2, 2, 3, 3, 3], // Difficulty: Very hard
+                      [0, 0, 0, 1, 1, 2, 3]] // Difficulty: Maybe impossible
                       
     // --------------------------------------------------------------------------------------------
     /// Constructor
@@ -925,6 +944,9 @@ class TormentCard {
     // --------------------------------------------------------------------------------------------
     resetCounter() {
         this.timesPicked = 0;
+        if (this.definitiveVersion) {
+            this.definitiveVersion.timesPicked = 0;
+        }
     }
     
     // --------------------------------------------------------------------------------------------
@@ -1004,7 +1026,16 @@ class TormentCard {
         cumWeights = [this[0].getWeight(round, difficulty, map)];
         
         for (var index = 1; index < this.length; index++) {
-            cumWeights.push(cumWeights[index - 1] + this[index].getWeight(round, difficulty, map));
+            var card;
+            
+            if (this[index].definitiveVersion && (this[index].timesPicked == this[index].maxPicks)) {
+                card = this[index].definitiveVersion;
+            }
+            else {
+                card = this[index];
+            }
+            
+            cumWeights.push(cumWeights[index - 1] + card.getWeight(round, difficulty, map));
         }
         
         // Get a random number in the interval [1, totalWeights].
@@ -1173,13 +1204,17 @@ let silverCards = new CardCollection([
                     "difficulty": "Very hard",
                     "rarity":     -2,
                     "image":      "./images/stackable3_definitive.gif",
-                    "text":      ["[Player] Sprinting: Off", "Can't sprint during hunts"],
+                    "text":      ["[Player] Sprinting: Off"],
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
-                    "incompatibleCards": []},
+                    "incompatibleCards": ["[Player] Player speed: 75%",
+                                          "[Player] Player speed: 50%", 
+                                          "Can't sprint during hunts"]},
      "forbiddenRounds":   [],
-     "incompatibleCards": ["[Player] Sprinting: Off"]},
+     "incompatibleCards": ["[Player] Player speed: 75%",
+                           "[Player] Player speed: 50%", 
+                           "[Player] Sprinting: Off"]},
        
     {"type":       "Stackable",
      "difficulty": "Normal",
@@ -1241,7 +1276,7 @@ let silverCards = new CardCollection([
        
     {"type":       "Stackable",
      "difficulty": "Normal",
-     "rarity":     +10,
+     "rarity":     +5,
      "image":      "./images/stackable7.gif",
      "text":      ["[Ghost] Grace period: 1s"],
      "maxPicks":   1,
@@ -1526,7 +1561,7 @@ let goldenCards = new CardCollection([
      "incompatibleCards": [],
      "effect":
          function onPick() { 
-             AppHandler.state.difficulty += 2;
+             AppHandler.state.difficulty += 3;
          } 
      },
      
@@ -1730,10 +1765,10 @@ let goldenCards = new CardCollection([
              AppHandler.state.maxRounds += 1;
              AppHandler.state.pickedChallenges.splice(0, 0, "-- REMINDER: You may fail any 1 round --<br>");
          } 
-     },
-     
+     }
+    /* 
     {"type":       "Golden",
-     "difficulty": "Normal",
+     "difficulty": "Easy",
      "rarity":     +0,
      "image":      "./images/golden9.gif",
      "text":      ["Unchosen cards will remain on offer"],
@@ -1744,8 +1779,9 @@ let goldenCards = new CardCollection([
      "effect":    
          function onPick() { 
              AppHandler.state.keepUnpickedMode = true;
+             AppHandler.state.difficulty += 1;
          } 
-     }
+     }*/
 ]);
 
 /// -------------------------------------------------------------------------------------------------------------------
