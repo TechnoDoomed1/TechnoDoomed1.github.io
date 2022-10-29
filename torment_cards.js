@@ -103,12 +103,22 @@ class WebHandler {
         if (elementID.indexOf("section") >= 0) {
             element.style.display = "block";
         }
-        else if ((elementID == 'cardslots') || (elementID == 'listcolumns')) {
+        else if ((elementID == 'cardslots') || (elementID == 'listcolumns') || 
+                 (elementID.indexOf('tiptext') >= 0)) {
             element.style.display = "flex";
         }
         else {
             element.style.display = "inline";
         }
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    /// isElementHidden(String)
+    //  Needs the element ID to be passed as parameter.
+    //  Returns true if the element is not visible, and false otherwise.
+    // --------------------------------------------------------------------------------------------
+    static isElementHidden(elementID) {
+        return (document.getElementById(elementID).style.display == "none");
     }
     
     // --------------------------------------------------------------------------------------------
@@ -119,8 +129,10 @@ class WebHandler {
     // --------------------------------------------------------------------------------------------
     static hideCard(slotIndex) {
         var cardElementID = 'card' + slotIndex;
-        WebHandler.changeClickFunction(cardElementID, function onclick() {});
+        var cardTipElementID = 'tip' + slotIndex;
+        WebHandler.changeImage(cardTipElementID, "./images/no_tooltip.png");
         WebHandler.changeImage(cardElementID, "./images/no_card.png");
+        WebHandler.changeClickFunction(cardElementID, function onclick() {});
     }
     
     // --------------------------------------------------------------------------------------------
@@ -132,6 +144,7 @@ class WebHandler {
     static showCard(slotIndex, appState) {
         var card = appState.offeredCards[slotIndex];
         var cardElementID = 'card' + slotIndex;
+        var cardTipElementID = 'tip' + slotIndex;
         WebHandler.changeClickFunction(cardElementID, function onclick() 
                                                       { AppHandler.takeCard(slotIndex) });
                                                       
@@ -157,6 +170,8 @@ class WebHandler {
         else {
             WebHandler.changeImage(cardElementID, card.image);
         }
+        
+        WebHandler.changeImage(cardTipElementID, "./images/tooltip.png");
     }
     
     // --------------------------------------------------------------------------------------------
@@ -304,11 +319,15 @@ class AppHandler {
         
         // Show the run choice cards on screen, and update what happens when you click them.
         WebHandler.changeImage('card0', "./images/run_normal.gif");
+        WebHandler.hideElement('tip0');
         WebHandler.changeClickFunction('card0', function onclick() { AppHandler.startRun(false) });
+        
         WebHandler.changeImage('card1', "./images/run_hard.gif");
+        WebHandler.hideElement('tip1');
         WebHandler.changeClickFunction('card1', function onclick() { AppHandler.startRun(true) });
-        WebHandler.hideElement('card2');
-        WebHandler.hideElement('card3');
+        
+        WebHandler.hideElement('cardslot2');
+        WebHandler.hideElement('cardslot3');
         
         // Show the card slots again (in case they were hidden before for mobile view).
         WebHandler.showElement('cardslots');
@@ -337,9 +356,11 @@ class AppHandler {
         WebHandler.hideElement('welcometext-section');
         WebHandler.hideElement('go-to-explanation');
         
-        // Show the rest of the cards again.
-        WebHandler.showElement('card2');
-        WebHandler.showElement('card3');
+        // Show the rest of the card and associated tips again.
+        WebHandler.showElement('tip0');
+        WebHandler.showElement('tip1');
+        WebHandler.showElement('cardslot2');
+        WebHandler.showElement('cardslot3');
         
         // Show both buttons.
         WebHandler.showElement('left-button');
@@ -369,7 +390,10 @@ class AppHandler {
             for (var slotIndex = 0; slotIndex < slotAmount; slotIndex++) {
                 WebHandler.showCard(slotIndex, AppHandler.state);
             }
-
+            
+            // All tooltip icons can be clicked to reveal an explanation of what each card does.
+            AppHandler.unexplainAllCards();
+            
             // Allow the user to continue whenever they want.
             WebHandler.changeText('right-button', "Continue");
             WebHandler.changeStyleCSS('right-button', "nextround-button-enabled");
@@ -435,7 +459,7 @@ class AppHandler {
         
         // Hide the 4th card slot if it's not going to be used.
         if (AppHandler.state.totalCardSlots == 3) {
-            WebHandler.hideElement('card3');
+            WebHandler.hideElement('cardslot3');
         }
         
         // Generate a new set of cards and offer them to the user.
@@ -626,13 +650,18 @@ class AppHandler {
         
         // No longer need to know which slots were hidden before.
         AppHandler.state.hiddenSlots = [];
+        
+        // Hide all tooltip texts again.
+        for (var slotIndex = 0; slotIndex < AppHandler.state.totalCardSlots; slotIndex++) {
+            WebHandler.hideElement('tiptext' + slotIndex);
+        }
     }
     
     // --------------------------------------------------------------------------------------------
-    /// takeCard()
-    //  When a card is picked, it is processed and hidden.
-    //  If all cards have been picked for this round, then the 'Next round' button is activated
-    //  (unless the run has ended).
+    /// takeCard(Number)
+    //  Needs the card's slot index as parameter.
+    //  When a card is picked, it is processed and hidden. If all cards have been picked for this 
+    //  round, then the 'Next round' button is activated (unless the run has ended).
     // --------------------------------------------------------------------------------------------
     static takeCard(slotIndex) {
         var card = AppHandler.state.offeredCards[slotIndex];
@@ -826,6 +855,47 @@ class AppHandler {
             WebHandler.changeText('picktext', newPickText);
         }
     }
+    
+    // --------------------------------------------------------------------------------------------
+    /// explainCard(Number)
+    //  Needs the card's slot index as parameter.
+    //  When the tooltip is clicked, show/hide the card's explanation.
+    // --------------------------------------------------------------------------------------------
+    static explainCard(slotIndex) {
+        var card = AppHandler.state.offeredCards[slotIndex];
+        var explanationElementID = 'tiptext' + slotIndex;
+        
+        if (WebHandler.isElementHidden(explanationElementID)) {
+            WebHandler.showElement(explanationElementID);
+            var cardImage = document.getElementById('card' + slotIndex).src;
+            
+            if (cardImage.indexOf("silver_unknown") >= 0) {
+                WebHandler.changeText(explanationElementID, "A facedown silver card.<br><br><i>(Picking a facedown card reveals it)</i>");
+            }
+            else if (cardImage.indexOf("golden_unknown") >= 0) {
+                WebHandler.changeText(explanationElementID, "A facedown golden card.<br><br><i>(Picking a facedown card reveals it)</i>");
+            }
+            else if (cardImage.indexOf("challenge_unknown") >= 0) {
+                WebHandler.changeText(explanationElementID, "A facedown challenge card.<br><br><i>(Picking a facedown card reveals it)</i>");
+            }
+            else {
+                WebHandler.changeText(explanationElementID, card.explanation);
+            }
+        }
+        else {
+            WebHandler.hideElement(explanationElementID);
+        }
+    }
+    
+    // --------------------------------------------------------------------------------------------
+    /// unexplainAllCards()
+    //  Hide the explanation for all cards.
+    // --------------------------------------------------------------------------------------------
+    static unexplainAllCards() {
+        for (var slotIndex = 0; slotIndex < AppHandler.state.totalCardSlots; slotIndex++) {
+            WebHandler.hideElement('tiptext' + slotIndex);
+        }
+    }
 }
 
 /// -------------------------------------------------------------------------------------------------------------------
@@ -917,6 +987,7 @@ class TormentCard {
     //    - Rarity
     //    - Image
     //    - Text
+    //    - Explanation
     //    - Max number of times it can be picked
     //    - Definitive version
     //    - Rounds in which it can't be offered
@@ -929,6 +1000,7 @@ class TormentCard {
         this.weightModifier = params.rarity;
         this.image = params.image;
         this.text = params.text;
+        this.explanation = params.tooltip;
         this.maxPicks = params.maxPicks;
         this.forbiddenRounds = params.forbiddenRounds;
         this.incompatibleCards = params.incompatibleCards;
@@ -1066,6 +1138,7 @@ let silverCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/basic1.gif",
      "text":      ["[Contract] Activity monitor: Off<br>[Contract] Sanity monitor: Off"],
+     "tooltip":    "<b>Contract modifiers</b><br>Activity monitor: Off<br>Sanity monitor: Off",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1076,6 +1149,7 @@ let silverCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/basic2.gif",
      "text":      ["[Contract] Cursed possessions quantity: 0"],
+     "tooltip":    "<b>Contract modifiers</b><br>Cursed possessions quantity: 0",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1086,6 +1160,7 @@ let silverCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/basic3.gif",
      "text":      ["[Contract] Fuse box starts: Broken"],
+     "tooltip":    "<b>Contract modifiers</b><br>Fuse box starts: Broken",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1096,6 +1171,7 @@ let silverCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/basic4.gif",
      "text":      ["[Ghost] Fingerprint chance: 50%"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Fingerprint chance: 50%",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1106,6 +1182,7 @@ let silverCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/basic5.gif",
      "text":      ["[Ghost] Fingerprint duration: 15s"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Fingerprint duration: 15s",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1116,6 +1193,7 @@ let silverCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/basic6.gif",
      "text":      ["[Ghost] Interaction amount: Medium<br>[Ghost] Event frequency: High"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Interaction amount: Medium<br>Event frequency: High",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1126,6 +1204,7 @@ let silverCards = new CardCollection([
      "rarity":     +5,
      "image":      "./images/basic7.gif",
      "text":      ["[Contract] Weather: Snow"],
+     "tooltip":    "<b>Contract modifiers</b><br>Weather: Snow",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1136,6 +1215,7 @@ let silverCards = new CardCollection([
      "rarity":     +8,
      "image":      "./images/basic8.gif",
      "text":      ["[Contract] Weather: Heavy rain"],
+     "tooltip":    "<b>Contract modifiers</b><br>Weather: Heavy rain<i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1146,6 +1226,7 @@ let silverCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/basic9.gif",
      "text":      ["[Ghost] Changing favourite room: Medium"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Changing favourite room: Medium",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1161,12 +1242,14 @@ let silverCards = new CardCollection([
      "text":      ["[Player] Starting sanity: 75%",
                    "[Player] Starting sanity: 50%",
                    "[Player] Starting sanity: 25%"],
+     "tooltip":    "<b>Player modifiers</b><br>Starting sanity: 100% - 25% x times picked",
      "maxPicks":   3,
      "definitive": {"type":       "Basic",
                     "difficulty": "Maybe impossible",
                     "rarity":     -1,
                     "image":      "./images/stackable1_definitive.gif",
                     "text":      ["[Player] Stating sanity: 0%"],
+                    "tooltip":    "<b>Player modifiers</b><br>Starting sanity: 0%",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1180,12 +1263,14 @@ let silverCards = new CardCollection([
      "image":      "./images/stackable2.gif",
      "text":      ["[Player] Sanity pill restoration: 20%",
                    "[Player] Sanity pill restoration: 10%"],
+     "tooltip":    "<b>Player modifiers</b><br>Sanity pill restoration: 30% - 10% x times picked",
      "maxPicks":   2,
      "definitive": {"type":       "Basic",
                     "difficulty": "Very hard",
                     "rarity":     +0,
                     "image":      "./images/stackable2_definitive.gif",
                     "text":      ["[Player] Sanity pill restoration: 0%"],
+                    "tooltip":    "<b>Player modifiers</b><br>Sanity pill restoration: 0%",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1199,12 +1284,14 @@ let silverCards = new CardCollection([
      "image":      "./images/stackable3.gif",
      "text":      ["[Player] Sprint duration: 2s",
                    "[Player] Sprint duration: 1s"],
+     "tooltip":    "<b>Player modifiers</b><br>Sprint duration: 3s - 1s x times picked",
      "maxPicks":   2,
      "definitive": {"type":       "Basic",
                     "difficulty": "Very hard",
                     "rarity":     -2,
                     "image":      "./images/stackable3_definitive.gif",
                     "text":      ["[Player] Sprinting: Off"],
+                    "tooltip":    "<b>Player modifiers</b><br>Sprinting: Off",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1222,12 +1309,14 @@ let silverCards = new CardCollection([
      "image":      "./images/stackable4.gif",
      "text":      ["[Ghost] Evidence given: 2",
                    "[Ghost] Evidence given: 1"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Eviden given: 3 - 1 x times picked",
      "maxPicks":   2,
      "definitive": {"type":       "Basic",
                     "difficulty": "Maybe impossible",
                     "rarity":     +0,
                     "image":      "./images/stackable4_definitive.gif",
                     "text":      ["[Ghost] Evidence given: 0"],
+                    "tooltip":    "<b>Ghost modifiers</b><br>Eviden given: 0",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1243,12 +1332,14 @@ let silverCards = new CardCollection([
      "rarity":     -2,
      "image":      "./images/stackable5.gif",
      "text":      ["[Player] Player speed: 75%"],
+     "tooltip":    "<b>Player modifiers</b><br>Player speed: 75%",
      "maxPicks":   1,
      "definitive": {"type":    "Basic",
                     "difficulty": "Maybe impossible",
                     "rarity":    -2,
                     "image":     "./images/stackable5_definitive.gif",
                     "text":     ["[Player] Player speed: 50%"],
+                    "tooltip":    "<b>Player modifiers</b><br>Player speed: 50%",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1261,12 +1352,14 @@ let silverCards = new CardCollection([
      "rarity":     +10,
      "image":      "./images/stackable6.gif",
      "text":      ["[Ghost] Ghost speed: 125%"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Ghost speed: 125%",
      "maxPicks":   1,
      "definitive": {"type":       "Basic",
                     "difficulty": "Very hard",
                     "rarity":     +0,
                     "image":      "./images/stackable6_definitive.gif",
                     "text":      ["[Ghost] Ghost speed: 150%"],
+                    "tooltip":    "<b>Ghost modifiers</b><br>Ghost speed: 150%",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1279,12 +1372,14 @@ let silverCards = new CardCollection([
      "rarity":     +5,
      "image":      "./images/stackable7.gif",
      "text":      ["[Ghost] Grace period: 1s"],
+     "tooltip":    "<b>Ghost modifiers</b><br>Grace period: 1s",
      "maxPicks":   1,
      "definitive": {"type":       "Basic",
                     "difficulty": "Very hard",
                     "rarity":     -2,
                     "image":      "./images/stackable7_definitive.gif",
                     "text":      ["[Ghost] Grace period: 0s<br>[Ghost] Kills extend hunts: Low"],
+                    "tooltip":    "<b>Ghost modifiers</b><br>Grace period: 0s<br>Kills extend hunts: Low",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1297,12 +1392,14 @@ let silverCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/stackable8.gif",
      "text":      ["[Contract] Number of hiding places: Low"],
+     "tooltip":    "<b>Contract modifiers</b><br>Number of hiding places: Low",
      "maxPicks":   1,
      "definitive": {"type":       "Basic",
                     "difficulty": "Maybe impossible",
                     "rarity":     -1,
                     "image":      "./images/stackable8_definitive.gif",
                     "text":      ["[Contract] Number of hiding places: None"],
+                    "tooltip":    "<b>Contract modifiers</b><br>Number of hiding places: None",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1320,12 +1417,14 @@ let challengeCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/challenge1.gif",
      "text":      ["Can't use strong flashlights"],
+     "tooltip":    "Strong flashlights must not be used.",
      "maxPicks":   1,
      "definitive": {"type":       "Basic",
                     "difficulty": "Very hard",
                     "rarity":     -2,
                     "image":      "./images/challenge1_definitive.gif",
                     "text":      ["[Player] Flashlights: Off"],
+                    "tooltip":    "Flashlights and strong flashlights will not work anymore. <i>(UV flashlights will still work)</i>",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1335,9 +1434,10 @@ let challengeCards = new CardCollection([
        
     {"type":       "Challenge",
      "difficulty": "Hard",
-     "rarity":     +2,
+     "rarity":     +99,
      "image":      "./images/challenge2.gif",
      "text":      ["Photo randomizer"],
+     "tooltip":    "You start with only flashlights, strong flashlights and photo cameras available.<br><br>Unlock a random item when getting a succesful photo, or completing an objective. Ghost photo unlocks an extra random item.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1350,6 +1450,7 @@ let challengeCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/challenge3.gif",
      "text":      ["Starter equipment only"],
+     "tooltip":    "You may only bring starter equipment.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1363,6 +1464,7 @@ let challengeCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/challenge4.gif",
      "text":      ["No crucifix, candles or smudge sticks"],
+     "tooltip":    "Crucifixes, candles and smudge sticks must not be used.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1373,6 +1475,7 @@ let challengeCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/challenge5.gif",
      "text":      ["No evidence items"],
+     "tooltip":    "Items needed to get evidence must not be used. <i>(Thermometer and photo camera are not included, but the glowstick is)<i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1384,6 +1487,7 @@ let challengeCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/challenge6.gif",
      "text":      ["No paramic, thermometer or sensors"],
+     "tooltip":    "Parabolic microphones, thermometers, motion sensors and sound sensors must not be used.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1394,6 +1498,7 @@ let challengeCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/challenge7.gif",
      "text":      ["Complete all objectives"],
+     "tooltip":    "You may not close the truck to leave the map until all objectives have been completed.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1409,6 +1514,7 @@ let challengeCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/challenge8.gif",
      "text":      ["Must finish under 12 minutes"],
+     "tooltip":    "Start the timer when opening the truck. Stop the timer when closing the truck to leave the map. The timer must not be above 12:00. <i>(You may pause the timer if you need to go AFK.)</i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1419,6 +1525,7 @@ let challengeCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/challenge9.gif",
      "text":      ["Only enter the building once"],
+     "tooltip":    "Once you get out of the building, you may not get inside again. Lingering on the doorstep throwing items inside is fine.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1429,6 +1536,7 @@ let challengeCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/challenge10.gif",
      "text":      ["Must exhaust cursed item once found"],
+     "tooltip":    "If you enter a room with a cursed possession, and notice it or know it's in there, you must keep using it until you can no longer do so anymore.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1439,6 +1547,7 @@ let challengeCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/challenge11.gif",
      "text":      ["No sound"],
+     "tooltip":    "You must play without hearing any sound from the game.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1, 2, 3, 4],
@@ -1449,6 +1558,7 @@ let challengeCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/challenge12.gif",
      "text":      ["Get minimum 50$ in photos"],
+     "tooltip":    "When the mission ends, you must have racked up at least 50$ in photo rewards.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1460,6 +1570,7 @@ let challengeCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/challenge13.gif",
      "text":      ["Get ghost & bone photo"],
+     "tooltip":    "You must get both the ghost photo, and the bone photo.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1470,6 +1581,7 @@ let challengeCards = new CardCollection([
      "rarity":     -1,
      "image":      "./images/challenge14.gif",
      "text":      ["Can only use 1 of each item"],
+     "tooltip":    "For each item available in your truck, you may only use 1 of each item. <i>(This applies to the entire team in the case of multiplayer)</i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1480,6 +1592,7 @@ let challengeCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/challenge15.gif",
      "text":      ["Can't close any doors"],
+     "tooltip":    "You must not close doors. If you do so accidentally, open it as soon as possible. <i>(This may prevent hiding safely in certain spots, like closets or lockers)</i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1490,6 +1603,7 @@ let challengeCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/challenge16.gif",
      "text":      ["Can't interact with light switches"],
+     "tooltip":    "You must not interact with light switchers, although you may interact with the breaker. If you do so accidentally, turn the lightswitch to how it was before as soon as possible.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1500,6 +1614,7 @@ let challengeCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/challenge17.gif",
      "text":      ["Can't sprint during hunts"],
+     "tooltip":    "You must not sprint during hunts. If you do so accidentally, stop sprinting as soon as you notice the ghost is hunting.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1510,6 +1625,7 @@ let challengeCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/challenge18.gif",
      "text":      ["Can't reuse rooms to hide in"],
+     "tooltip":    "If the ghost hasn't seen you during a hunt, you may not linger in the room you were in during any future hunts.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1520,6 +1636,7 @@ let challengeCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/challenge_special.gif",
      "text":      ["Can't use any items used last round"],
+     "tooltip":    "Keep track of all items you use in each round. You must not use them during the next round.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1],
@@ -1540,6 +1657,7 @@ let goldenCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/golden_special1.gif",
      "text":      ["Golden cards will not be offered"],
+     "tooltip":    "Cards offered won't include golden cards anymore.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1555,6 +1673,7 @@ let goldenCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/golden_special2.gif",
      "text":      ["Greatly increase card difficulty"],
+     "tooltip":    "Cards offered will tend to be much harder.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1570,6 +1689,7 @@ let goldenCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/golden_special3.gif",
      "text":      ["Some cards will be much worse"],
+     "tooltip":    "Cards offered might have pretty harsh difficulty modifiers.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1585,6 +1705,7 @@ let goldenCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/golden_special4.gif",
      "text":      ["Restrict card choices to 3 slots"],
+     "tooltip":    "You will get 1 less choice during each round.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1603,12 +1724,14 @@ let goldenCards = new CardCollection([
      "rarity":     +5,
      "image":      "./images/golden1.gif",
      "text":      ["Slightly increase card difficulty"],
+     "tooltip":    "Cards offered will tend to be somewhat harder.",
      "maxPicks":   1,
      "definitive": {"type":       "Golden",
                     "difficulty": "Hard",
                     "rarity":     +3,
                     "image":      "./images/golden1_definitive.gif",
                     "text":      ["Further increase card difficulty"],
+                    "tooltip":    "Cards offered will tend to be harder.",
                     "maxPicks":   1,
                     "definitive": null,
                     "forbiddenRounds":   [],
@@ -1631,6 +1754,7 @@ let goldenCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/golden2.gif",
      "text":      ["Pick an extra card next time"],
+     "tooltip":    "You will have to pick 3 cards next round.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [5, 6],
@@ -1646,6 +1770,7 @@ let goldenCards = new CardCollection([
      "rarity":     +1,
      "image":      "./images/golden3.gif",
      "text":      ["Challenges appear more often"],
+     "tooltip":    "Each round will have an extra challenge card.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [4, 5, 6],
@@ -1661,6 +1786,7 @@ let goldenCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/golden4.gif",
      "text":      ["All cards are a mystery next time"],
+     "tooltip":    "Next round, all cards will be facedown. <i>(Picking a facedown card reveals it)</i>",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [5, 6],
@@ -1676,6 +1802,7 @@ let goldenCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/golden5.gif",
      "text":      ["Random cards are offered. Pick again"],
+     "tooltip":    "Get a new batch of cards. These might include much better or worse cards than usual.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [],
@@ -1697,6 +1824,7 @@ let goldenCards = new CardCollection([
      "rarity":     +0,
      "image":      "./images/golden6.gif",
      "text":      ["Change map to a bigger one"],
+     "tooltip":    "Instead of playing the current map, you'll get a random non-small map.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [3, 5],
@@ -1713,6 +1841,7 @@ let goldenCards = new CardCollection([
      "rarity":     +3,
      "image":      "./images/golden7.gif",
      "text":      ["Pick all cards. Get a bigger map. End run now"],
+     "tooltip":    "Ends the run right now. Changes the map to a random non-small map. You are forced to pick all other cards on offer.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [1, 2, 3, 5],
@@ -1756,6 +1885,7 @@ let goldenCards = new CardCollection([
      "rarity":     +2,
      "image":      "./images/golden8.gif",
      "text":      ["You can fail any 1 round. Longer run"],
+     "tooltip":    "You will be able to fail 1 round, but in exchange you'll go through a 6th round.",
      "maxPicks":   1,
      "definitive": null,
      "forbiddenRounds":   [4, 5],

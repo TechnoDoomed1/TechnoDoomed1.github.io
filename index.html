@@ -49,7 +49,6 @@
     <link rel="prefetch" href="./images/golden6.gif"               as="image"/>
     <link rel="prefetch" href="./images/golden7.gif"               as="image"/>
     <link rel="prefetch" href="./images/golden8.gif"               as="image"/>
-    <link rel="prefetch" href="./images/golden9.gif"               as="image"/>
     <link rel="prefetch" href="./images/golden_unknown.gif"        as="image"/>
     <link rel="prefetch" href="./images/no_card.png"               as="image"/>
     <link rel="prefetch" href="./images/run_hard.gif"              as="image"/>
@@ -71,6 +70,8 @@
     <link rel="prefetch" href="./images/stackable7_definitive.gif" as="image"/>
     <link rel="prefetch" href="./images/stackable8.gif"            as="image"/>
     <link rel="prefetch" href="./images/stackable8_definitive.gif" as="image"/>
+    <link rel="prefetch" href="./images/no_tooltip.png"            as="image"/>
+    <link rel="prefetch" href="./images/tooltip.png"               as="image"/>
   </head>
   <body>
       <div id="topcontainer">
@@ -81,10 +82,34 @@
       </section>
       <div id="picktext">Pick 2 of these cards:</div>
       <div id="cardslots">
-        <img src="./images/silver_unknown.gif" alt="" class="card" id="card0" onclick="">
-        <img src="./images/silver_unknown.gif" alt="" class="card" id="card1" onclick="">
-        <img src="./images/silver_unknown.gif" alt="" class="card" id="card2" onclick="">
-        <img src="./images/silver_unknown.gif" alt="" class="card" id="card3" onclick="">
+        <div class="cardslot" id="cardslot0">
+          <img src="./images/silver_unknown.gif" alt="" class="card" id="card0" onclick="">
+          <div class="tooltip">
+            <img src="./images/tooltip.png" alt="" id="tip0" onclick="AppHandler.explainCard(0)">
+            <span class="tooltiptext" id="tiptext0" onclick="AppHandler.explainCard(0)">Example text</span>
+          </div>
+        </div>
+        <div class="cardslot" id="cardslot1">
+          <img src="./images/silver_unknown.gif" alt="" class="card" id="card1" onclick="">
+          <div class="tooltip">
+            <img src="./images/tooltip.png" alt="" id="tip1" onclick="AppHandler.explainCard(1)">
+            <span class="tooltiptext" id="tiptext1" onclick="AppHandler.explainCard(1)">Example text</span>
+          </div>
+        </div>
+        <div class="cardslot" id="cardslot2">
+          <img src="./images/silver_unknown.gif" alt="" class="card" id="card2" onclick="">
+          <div class="tooltip">
+            <img src="./images/tooltip.png" alt="" id="tip2" onclick="AppHandler.explainCard(2)">
+            <span class="tooltiptext" id="tiptext2" onclick="AppHandler.explainCard(2)">Example text</span>
+          </div>
+        </div>
+        <div class="cardslot" id="cardslot3">
+          <img src="./images/silver_unknown.gif" alt="" class="card" id="card3" onclick="">
+          <div class="tooltip">
+            <img src="./images/tooltip.png" alt="" id="tip3" onclick="AppHandler.explainCard(3)">
+            <span class="tooltiptext" id="tiptext3" onclick="AppHandler.explainCard(3)">Example text</span>
+          </div>
+        </div>
       </div>
       <div id="middlecontainer">
         <button id="left-button" onclick="AppHandler.chooseNewRun()">Start new run</button>
@@ -105,7 +130,7 @@
         </div>
       </div>
     </div>
-    <a class="technicaltext" id="go-to-explanation" href="./explanation.html"><br><br><br><br>Give me a more detailed explanation!</a>
+    <a class="technicaltext" id="go-to-explanation" href="./explanation.html"><br><br>Give me a more detailed explanation!</a>
     <script type="text/javascript" src="torment_cards.js"></script>
   </body>
 </html>
